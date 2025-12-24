@@ -2,7 +2,123 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-// Get all balances summary (MUST come before /:party_id to prevent route matching issues)
+// Get ledger for specific party
+router.get('/:party_id', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { from_date, to_date } = req.query;
+        const params = [req.params.party_id, userId];
+        
+        let dateFilter = '';
+        if (from_date && to_date) {
+            params.push(from_date, to_date);
+            dateFilter = ` AND date BETWEEN $3 AND $4`;
+        }
+
+        const query = `
+            SELECT 
+                'Sale' as transaction_type,
+                st.date,
+                st.total_amount as debit,
+                0 as credit,
+                CONCAT('Sale - ', COALESCE(st.invoice_no, ''), ' - ', p.name, ' ', p.size) as description,
+                st.note,
+                NULL as running_balance
+            FROM stock_transactions st
+            JOIN products p ON st.product_id = p.id AND p.user_id = $2
+            WHERE st.party_id = $1 AND st.user_id = $2 AND st.type = 'OUT'${dateFilter}
+            
+            UNION ALL
+            
+            SELECT 
+                'Purchase' as transaction_type,
+                st.date,
+                0 as debit,
+                st.total_amount as credit,
+                CONCAT('Purchase - ', COALESCE(st.invoice_no, ''), ' - ', p.name, ' ', p.size) as description,
+                st.note,
+                NULL as running_balance
+            FROM stock_transactions st
+            JOIN products p ON st.product_id = p.id AND p.user_id = $2
+            WHERE st.party_id = $1 AND st.user_id = $2 AND st.type = 'IN'${dateFilter}
+            
+            UNION ALL
+            
+            SELECT 
+                'Payment' as transaction_type,
+                py.date,
+                0 as debit,
+                py.amount as credit,
+                CONCAT('Payment (', py.mode, ')') as description,
+                py.note,
+                NULL as running_balance
+            FROM payments py
+            WHERE py.party_id = $1 AND py.user_id = $2${dateFilter}
+            
+            ORDER BY date, transaction_type
+        `;
+
+        const transactions = await db.all(query, params);
+        console.log('[LEDGER] Raw transactions:', JSON.stringify(transactions, null, 2));
+
+        // Get opening balance and party type
+        const party = await db.get('SELECT * FROM parties WHERE id = $1 AND user_id = $2', [req.params.party_id, userId]);
+        console.log('[LEDGER] Party:', JSON.stringify(party, null, 2));
+        
+        // Calculate running balance based on party type
+        let runningBalance = parseFloat(party.opening_balance) || 0;
+        console.log('[LEDGER] Starting balance:', runningBalance);
+        
+        const ledgerWithBalance = transactions.map(transaction => {
+            const debit = parseFloat(transaction.debit) || 0;
+            const credit = parseFloat(transaction.credit) || 0;
+            
+            if (party.type === 'supplier') {
+                // SUPPLIER: balance = -purchases + payments + opening
+                // Sales increase what they owe us (positive)
+                // Purchases increase what we owe them (negative)
+                // Payments reduce what we owe them (increase balance)
+                if (transaction.transaction_type === 'Sale') {
+                    runningBalance += debit;
+                } else if (transaction.transaction_type === 'Purchase') {
+                    runningBalance -= credit;
+                } else if (transaction.transaction_type === 'Payment') {
+                    runningBalance += credit;
+                }
+            } else {
+                // CLIENT: balance = opening + sales - purchases - payments
+                // Sales increase what they owe us (positive)
+                // Purchases decrease what they owe us (negative)
+                // Payments reduce what they owe us (negative)
+                if (transaction.transaction_type === 'Sale') {
+                    runningBalance += debit;
+                } else if (transaction.transaction_type === 'Purchase') {
+                    runningBalance -= credit;
+                } else if (transaction.transaction_type === 'Payment') {
+                    runningBalance -= credit;
+                }
+            }
+            console.log(`[LEDGER] ${transaction.transaction_type} | debit=${debit} credit=${credit} | runningBalance=${runningBalance}`);
+            return {
+                ...transaction,
+                running_balance: runningBalance
+            };
+        });
+
+        res.json({
+            party_id: party.id,
+            party_name: party.name,
+            party_type: party.type,
+            opening_balance: party.opening_balance,
+            transactions: ledgerWithBalance,
+            closing_balance: runningBalance
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get all balances summary
 router.get('/', async (req, res) => {
     try {
         const userId = req.user.id;
@@ -98,112 +214,6 @@ router.get('/', async (req, res) => {
         res.json({
             balances: balancesWithCalculations,
             summary: totals
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Get ledger for specific party
-router.get('/:party_id', async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { from_date, to_date } = req.query;
-        const params = [req.params.party_id, userId];
-        
-        let dateFilter = '';
-        if (from_date && to_date) {
-            params.push(from_date, to_date);
-            dateFilter = ` AND date BETWEEN $3 AND $4`;
-        }
-
-        const query = `
-            SELECT 
-                'Sale' as transaction_type,
-                st.date,
-                st.total_amount as debit,
-                0 as credit,
-                CONCAT('Sale - ', COALESCE(st.invoice_no, ''), ' - ', p.name, ' ', p.size) as description,
-                st.note,
-                NULL as running_balance
-            FROM stock_transactions st
-            JOIN products p ON st.product_id = p.id AND p.user_id = $2
-            WHERE st.party_id = $1 AND st.user_id = $2 AND st.type = 'OUT'${dateFilter}
-            
-            UNION ALL
-            
-            SELECT 
-                'Purchase' as transaction_type,
-                st.date,
-                0 as debit,
-                st.total_amount as credit,
-                CONCAT('Purchase - ', COALESCE(st.invoice_no, ''), ' - ', p.name, ' ', p.size) as description,
-                st.note,
-                NULL as running_balance
-            FROM stock_transactions st
-            JOIN products p ON st.product_id = p.id AND p.user_id = $2
-                py.note,
-                NULL as running_balance
-            FROM payments py
-            WHERE py.party_id = $1 AND py.user_id = $2${dateFilter}
-            
-            ORDER BY date, transaction_type
-        `;
-
-        const transactions = await db.all(query, params);
-        console.log('[LEDGER] Raw transactions:', JSON.stringify(transactions, null, 2));
-
-        // Get opening balance and party type
-        const party = await db.get('SELECT * FROM parties WHERE id = $1 AND user_id = $2', [req.params.party_id, userId]);
-        console.log('[LEDGER] Party:', JSON.stringify(party, null, 2));
-        
-        // Calculate running balance based on party type
-        let runningBalance = parseFloat(party.opening_balance) || 0;
-        console.log('[LEDGER] Starting balance:', runningBalance);
-        
-        const ledgerWithBalance = transactions.map(transaction => {
-            const debit = parseFloat(transaction.debit) || 0;
-            const credit = parseFloat(transaction.credit) || 0;
-            
-            if (party.type === 'supplier') {
-                // SUPPLIER: balance = -purchases + payments + opening
-                // Sales increase what they owe us (positive)
-                // Purchases increase what we owe them (negative)
-                // Payments reduce what we owe them (increase balance)
-                if (transaction.transaction_type === 'Sale') {
-                    runningBalance += debit;
-                } else if (transaction.transaction_type === 'Purchase') {
-                    runningBalance -= credit;
-                } else if (transaction.transaction_type === 'Payment') {
-                    runningBalance += credit;
-                }
-            } else {
-                // CLIENT: balance = opening + sales - purchases - payments
-                // Sales increase what they owe us (positive)
-                // Purchases decrease what they owe us (negative)
-                // Payments reduce what they owe us (negative)
-                if (transaction.transaction_type === 'Sale') {
-                    runningBalance += debit;
-                } else if (transaction.transaction_type === 'Purchase') {
-                    runningBalance -= credit;
-                } else if (transaction.transaction_type === 'Payment') {
-                    runningBalance -= credit;
-                }
-            }
-            console.log(`[LEDGER] ${transaction.transaction_type} | debit=${debit} credit=${credit} | runningBalance=${runningBalance}`);
-            return {
-                ...transaction,
-                running_balance: runningBalance
-            };
-        });
-
-        res.json({
-            party_id: party.id,
-            party_name: party.name,
-            party_type: party.type,
-            opening_balance: party.opening_balance,
-            transactions: ledgerWithBalance,
-            closing_balance: runningBalance
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
