@@ -4,8 +4,20 @@ const bodyParser = require('body-parser');
 const path = require('path');
 require('dotenv').config();
 
+const runMigrations = require('./runMigrations');
+
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+// Run migrations at startup
+(async () => {
+    try {
+        await runMigrations();
+    } catch (error) {
+        console.error('Failed to run migrations:', error.message);
+        process.exit(1);
+    }
+})();
 
 // Middleware
 app.use(cors({
