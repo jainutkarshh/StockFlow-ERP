@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://your-backend-url/api/:path*"
+      "destination": "https://stockflow-erp.onrender.com"
     },
     {
       "source": "/(.*)",
