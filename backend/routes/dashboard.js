@@ -12,7 +12,7 @@ router.get('/top-products', async (req, res) => {
                 p.name AS product,
                 SUM(st.quantity) AS quantity
             FROM stock_transactions st
-            JOIN products p ON st.product_id = p.id AND p.user_id = $1
+            JOIN products p ON st.product_id = p.id
             WHERE st.type = 'OUT' AND st.user_id = $1
             GROUP BY p.id, p.name
             ORDER BY quantity DESC

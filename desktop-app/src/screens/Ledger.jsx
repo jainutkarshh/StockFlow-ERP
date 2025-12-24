@@ -219,8 +219,8 @@ const Ledger = () => {
                     <Th>Date</Th>
                     <Th>Type</Th>
                     <Th>Description</Th>
-                    <Th>Debit</Th>
                     <Th>Credit</Th>
+                    <Th>Debit</Th>
                     <Th>Balance</Th>
                   </Tr>
                 </Thead>
