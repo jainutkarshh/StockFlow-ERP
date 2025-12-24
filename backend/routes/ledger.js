@@ -127,7 +127,7 @@ router.get('/:party_id', async (req, res) => {
                 st.note,
                 NULL as running_balance
             FROM stock_transactions st
-            JOIN products p ON st.product_id = p.id
+            JOIN products p ON st.product_id = p.id AND p.user_id = $2
             WHERE st.party_id = $1 AND st.user_id = $2 AND st.type = 'OUT'${dateFilter}
             
             UNION ALL
@@ -141,17 +141,7 @@ router.get('/:party_id', async (req, res) => {
                 st.note,
                 NULL as running_balance
             FROM stock_transactions st
-            JOIN products p ON st.product_id = p.id
-            WHERE st.party_id = $1 AND st.user_id = $2 AND st.type = 'IN'${dateFilter}
-            
-            UNION ALL
-            
-            SELECT 
-                'Payment' as transaction_type,
-                py.date,
-                0 as debit,
-                py.amount as credit,
-                CONCAT('Payment (', py.mode, ')') as description,
+            JOIN products p ON st.product_id = p.id AND p.user_id = $2
                 py.note,
                 NULL as running_balance
             FROM payments py

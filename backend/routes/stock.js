@@ -159,11 +159,11 @@ router.get('/history/:product_id', async (req, res) => {
                 pt.name as party_name,
                 pt.type as party_type
             FROM stock_transactions st
-            LEFT JOIN products p ON st.product_id = p.id
-            LEFT JOIN parties pt ON st.party_id = pt.id
+            LEFT JOIN products p ON st.product_id = p.id AND p.user_id = $1
+            LEFT JOIN parties pt ON st.party_id = pt.id AND pt.user_id = $1
             WHERE st.product_id = $1 AND st.user_id = $2
             ORDER BY st.date DESC, st.created_at DESC
-        `, [req.params.product_id, userId]);
+        `, [userId, userId]);
         res.json(history);
     } catch (error) {
         res.status(500).json({ error: error.message });
