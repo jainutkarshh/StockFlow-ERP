@@ -1,0 +1,108 @@
+############################
+# ENVIRONMENT VARIABLES
+############################
+.env
+.env.local
+.env.*.local
+*.env
+
+############################
+# DEPENDENCIES
+############################
+node_modules/
+**/node_modules/
+
+############################
+# BUILD OUTPUTS
+############################
+dist/
+build/
+out/
+release/
+.vite/
+
+############################
+# ELECTRON OUTPUTS
+############################
+*.exe
+*.dmg
+*.AppImage
+*.zip
+*.snap
+*.msi
+
+############################
+# LOG FILES
+############################
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+############################
+# DATABASE FILES (LOCAL ONLY)
+############################
+*.sqlite
+*.sqlite3
+*.db
+*.sql
+*.dump
+
+############################
+# CACHE / TEMP FILES
+############################
+.tmp
+tmp/
+.cache/
+.eslintcache
+*.pid
+
+############################
+# TEST COVERAGE
+############################
+coverage/
+.nyc_output/
+
+############################
+# IDE / EDITORS
+############################
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.iml
+
+############################
+# OS FILES
+############################
+.DS_Store
+Thumbs.db
+desktop.ini
+
+############################
+# NODE / NPM
+############################
+.pnpm-store/
+.npm/
+.yarn/
+.yarn-cache/
+
+############################
+# DEBUG
+############################
+debug.log
+
+############################
+# MISC
+############################
+*.bak
+*.old
+*.orig
+
+############################
+# ELECTRON CACHE
+############################
+electron-cache/
