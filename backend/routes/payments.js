@@ -14,6 +14,7 @@ The balance formula handles the effect on each party type.
 // Create payment
 router.post('/', async (req, res) => {
     try {
+        const userId = req.user.id;
         const { party_id, amount, mode, date, note } = req.body;
 
         console.log('[PAYMENT] Received payment request:', {
@@ -25,7 +26,7 @@ router.post('/', async (req, res) => {
             note
         });
 
-        const party = await db.get(`SELECT type FROM parties WHERE id = $1`, [party_id]);
+        const party = await db.get(`SELECT type FROM parties WHERE id = $1 AND user_id = $2`, [party_id, userId]);
         if (!party) return res.status(404).json({ error: "Party not found" });
 
         // ALWAYS store payments as positive
@@ -33,12 +34,12 @@ router.post('/', async (req, res) => {
         console.log('[PAYMENT] Final amount to store:', finalAmount, 'Type:', typeof finalAmount);
 
         const result = await db.run(
-            `INSERT INTO payments (party_id, amount, mode, date, note)
-             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-            [party_id, finalAmount, mode, date || new Date().toISOString().split("T")[0], note]
+            `INSERT INTO payments (user_id, party_id, amount, mode, date, note)
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+            [userId, party_id, finalAmount, mode, date || new Date().toISOString().split("T")[0], note]
         );
 
-        const payment = await db.get(`SELECT * FROM payments WHERE id = $1`, [result.id]);
+        const payment = await db.get(`SELECT * FROM payments WHERE id = $1 AND user_id = $2`, [result.id, userId]);
         res.status(201).json(payment);
 
     } catch (err) {
@@ -59,30 +60,31 @@ for supplier/client settlement entries.
 // Clear balance (UNIVERSAL FIX)
 router.post('/clear/:party_id', async (req, res) => {
     try {
+        const userId = req.user.id;
         const partyId = req.params.party_id;
 
         // Get party
-        const party = await db.get(`SELECT * FROM parties WHERE id = $1`, [partyId]);
+        const party = await db.get(`SELECT * FROM parties WHERE id = $1 AND user_id = $2`, [partyId, userId]);
         if (!party) return res.status(404).json({ error: "Party not found" });
 
         // Fetch totals
         const sales = await db.get(`
             SELECT COALESCE(SUM(total_amount), 0) as total
             FROM stock_transactions
-            WHERE party_id = $1 AND type = 'OUT'
-        `, [partyId]);
+            WHERE party_id = $1 AND user_id = $2 AND type = 'OUT'
+        `, [partyId, userId]);
 
         const purchases = await db.get(`
             SELECT COALESCE(SUM(total_amount), 0) as total
             FROM stock_transactions
-            WHERE party_id = $1 AND type = 'IN'
-        `, [partyId]);
+            WHERE party_id = $1 AND user_id = $2 AND type = 'IN'
+        `, [partyId, userId]);
 
         const payments = await db.get(`
             SELECT COALESCE(SUM(amount), 0) as total
             FROM payments
-            WHERE party_id = $1
-        `, [partyId]);
+            WHERE party_id = $1 AND user_id = $2
+        `, [partyId, userId]);
 
         // Convert all DECIMAL string values from PostgreSQL to numbers
         const salesTotal = parseFloat(sales.total) || 0;
@@ -118,8 +120,8 @@ router.post('/clear/:party_id', async (req, res) => {
         // Settlement payments have note = "Full Balance Settlement"
         const existingSettlement = await db.get(`
             SELECT COUNT(*) as count FROM payments 
-            WHERE party_id = $1 AND note = 'Full Balance Settlement'
-        `, [partyId]);
+            WHERE party_id = $1 AND user_id = $2 AND note = 'Full Balance Settlement'
+        `, [partyId, userId]);
 
         if (existingSettlement && existingSettlement.count > 0) {
             return res.status(400).json({ 
@@ -129,9 +131,10 @@ router.post('/clear/:party_id', async (req, res) => {
 
         // Insert settlement entry
         const result = await db.run(
-            `INSERT INTO payments (party_id, amount, mode, date, note)
-             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+            `INSERT INTO payments (user_id, party_id, amount, mode, date, note)
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
             [
+                userId,
                 partyId,
                 settlementAmount,
                 "cash",
@@ -157,13 +160,14 @@ router.post('/clear/:party_id', async (req, res) => {
 // Get payments by party
 router.get('/:party_id', async (req, res) => {
     try {
+        const userId = req.user.id;
         const payments = await db.all(`
             SELECT p.*, pt.name as party_name 
             FROM payments p
             JOIN parties pt ON p.party_id = pt.id
-            WHERE p.party_id = $1
+            WHERE p.party_id = $1 AND p.user_id = $2
             ORDER BY p.date DESC, p.created_at DESC
-        `, [req.params.party_id]);
+        `, [req.params.party_id, userId]);
 
         res.json(payments);
 
@@ -175,6 +179,7 @@ router.get('/:party_id', async (req, res) => {
 // Get all payments
 router.get('/', async (req, res) => {
     try {
+        const userId = req.user.id;
         const payments = await db.all(`
             SELECT 
                 p.*,
@@ -182,8 +187,9 @@ router.get('/', async (req, res) => {
                 pt.type as party_type
             FROM payments p
             JOIN parties pt ON p.party_id = pt.id
+            WHERE p.user_id = $1
             ORDER BY p.date DESC, p.created_at DESC
-        `);
+        `, [userId]);
         res.json(payments);
     } catch (err) {
         res.status(500).json({ error: err.message });

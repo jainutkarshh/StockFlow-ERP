@@ -5,13 +5,14 @@ const db = require('../db');
 // Get ledger for specific party
 router.get('/:party_id', async (req, res) => {
     try {
+        const userId = req.user.id;
         const { from_date, to_date } = req.query;
-        const params = [req.params.party_id];
+        const params = [req.params.party_id, userId];
         
         let dateFilter = '';
         if (from_date && to_date) {
             params.push(from_date, to_date);
-            dateFilter = ` AND date BETWEEN $2 AND $3`;
+            dateFilter = ` AND date BETWEEN $3 AND $4`;
         }
 
         const query = `
@@ -25,7 +26,7 @@ router.get('/:party_id', async (req, res) => {
                 NULL as running_balance
             FROM stock_transactions st
             JOIN products p ON st.product_id = p.id
-            WHERE st.party_id = $1 AND st.type = 'OUT'${dateFilter}
+            WHERE st.party_id = $1 AND st.user_id = $2 AND st.type = 'OUT'${dateFilter}
             
             UNION ALL
             
@@ -39,7 +40,7 @@ router.get('/:party_id', async (req, res) => {
                 NULL as running_balance
             FROM stock_transactions st
             JOIN products p ON st.product_id = p.id
-            WHERE st.party_id = $1 AND st.type = 'IN'${dateFilter}
+            WHERE st.party_id = $1 AND st.user_id = $2 AND st.type = 'IN'${dateFilter}
             
             UNION ALL
             
@@ -52,7 +53,7 @@ router.get('/:party_id', async (req, res) => {
                 py.note,
                 NULL as running_balance
             FROM payments py
-            WHERE py.party_id = $1${dateFilter}
+            WHERE py.party_id = $1 AND py.user_id = $2${dateFilter}
             
             ORDER BY date, transaction_type
         `;
@@ -61,7 +62,7 @@ router.get('/:party_id', async (req, res) => {
         console.log('[LEDGER] Raw transactions:', JSON.stringify(transactions, null, 2));
 
         // Get opening balance and party type
-        const party = await db.get('SELECT * FROM parties WHERE id = $1', [req.params.party_id]);
+        const party = await db.get('SELECT * FROM parties WHERE id = $1 AND user_id = $2', [req.params.party_id, userId]);
         console.log('[LEDGER] Party:', JSON.stringify(party, null, 2));
         
         // Calculate running balance based on party type
@@ -120,6 +121,7 @@ router.get('/:party_id', async (req, res) => {
 // Get all balances summary
 router.get('/', async (req, res) => {
     try {
+        const userId = req.user.id;
         console.log('[LEDGER] GET / - Starting balances query');
         const startTime = Date.now();
         
@@ -138,22 +140,24 @@ router.get('/', async (req, res) => {
             LEFT JOIN (
                 SELECT party_id, SUM(total_amount) as total_sales
                 FROM stock_transactions
-                WHERE type = 'OUT'
+                WHERE type = 'OUT' AND user_id = $1
                 GROUP BY party_id
             ) st_out ON pt.id = st_out.party_id
             LEFT JOIN (
                 SELECT party_id, SUM(total_amount) as total_purchases
                 FROM stock_transactions
-                WHERE type = 'IN'
+                WHERE type = 'IN' AND user_id = $1
                 GROUP BY party_id
             ) st_in ON pt.id = st_in.party_id
             LEFT JOIN (
                 SELECT party_id, SUM(amount) as total_payments
                 FROM payments
+                WHERE user_id = $1
                 GROUP BY party_id
             ) py ON pt.id = py.party_id
+            WHERE pt.user_id = $1
             ORDER BY pt.name
-        `);
+        `, [userId]);
 
         console.log(`[LEDGER] Query completed in ${Date.now() - startTime}ms, rows: ${balances.length}`);
 

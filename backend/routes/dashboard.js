@@ -5,6 +5,7 @@ const router = express.Router();
 // Get top 5 selling products based on stock OUT transactions
 router.get('/top-products', async (req, res) => {
     try {
+        const userId = req.user.id;
         const query = `
             SELECT 
                 p.id,
@@ -12,13 +13,13 @@ router.get('/top-products', async (req, res) => {
                 SUM(st.quantity) AS quantity
             FROM stock_transactions st
             JOIN products p ON st.product_id = p.id
-            WHERE st.type = 'OUT'
+            WHERE st.type = 'OUT' AND st.user_id = $1
             GROUP BY p.id, p.name
             ORDER BY quantity DESC
             LIMIT 5
         `;
 
-        const results = await db.all(query);
+        const results = await db.all(query, [userId]);
         
         res.json(results || []);
     } catch (error) {
