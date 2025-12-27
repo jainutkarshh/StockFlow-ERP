@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -24,6 +25,7 @@ import { api } from '../api/axiosClient';
 import GoogleLogo from '../assets/google.svg';
 
 export default function Login({ onLoginSuccess }) {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -48,6 +50,9 @@ export default function Login({ onLoginSuccess }) {
 
       setLoginData({ email: '', password: '' });
       onLoginSuccess(user, token);
+      
+      // ✅ Navigate to dashboard
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     } finally {
@@ -80,6 +85,9 @@ export default function Login({ onLoginSuccess }) {
 
       setRegisterData({ email: '', password: '', name: '' });
       onLoginSuccess(user, token);
+      
+      // ✅ Navigate to dashboard
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {
