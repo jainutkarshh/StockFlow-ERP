@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const passport = require('passport');
 const db = require('../db');
 
 const router = express.Router();
@@ -85,6 +86,35 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ error: 'Login failed' });
     }
 });
+
+// Google OAuth - Initiate login
+router.get('/google', passport.authenticate('google', {
+    scope: ['profile', 'email']
+}));
+
+// Google OAuth - Callback
+router.get('/google/callback',
+    passport.authenticate('google', {
+        session: false,
+        failureRedirect: '/login'
+    }),
+    (req, res) => {
+        const token = jwt.sign(
+            {
+                id: req.user.id,
+                email: req.user.email,
+                name: req.user.name,
+                provider: 'google'
+            },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRY }
+        );
+
+        res.redirect(
+            `${process.env.FRONTEND_URL}/oauth-success?token=${token}`
+        );
+    }
+);
 
 // Get current user (protected)
 router.get('/me', (req, res) => {

@@ -5,6 +5,7 @@ const path = require('path');
 require('dotenv').config();
 
 const runMigrations = require('./runMigrations');
+const passport = require('./config/passport');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -28,6 +29,7 @@ app.use(cors({
 }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(passport.initialize());
 
 // Import auth middleware and routes
 const { authenticateToken } = require('./middleware/auth');
