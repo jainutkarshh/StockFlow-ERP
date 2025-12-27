@@ -17,8 +17,11 @@ import {
   TabList,
   Tab,
   Divider,
+  HStack,
+  Image,
 } from '@chakra-ui/react';
 import { api } from '../api/axiosClient';
+import GoogleLogo from '../assets/google.svg';
 
 export default function Login({ onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -195,25 +198,24 @@ export default function Login({ onLoginSuccess }) {
 
                         <Button
                           width="100%"
+                          height="44px"
                           bg="white"
-                          color="#2d3748"
+                          color="gray.700"
                           border="1px solid"
-                          borderColor="#cbd5e0"
-                          _hover={{ bg: '#f7fafc', borderColor: '#a0aec0' }}
-                          _active={{ bg: '#edf2f7' }}
+                          borderColor="#dadce0"
+                          borderRadius="6px"
                           fontWeight="500"
-                          fontSize="14px"
-                          borderRadius="8px"
-                          h="40px"
+                          _hover={{ bg: '#f7f8f8' }}
+                          _active={{ bg: '#eee' }}
                           onClick={() => {
                             const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://stockflow-erp.onrender.com';
                             window.location.href = `${backendUrl}/api/auth/google`;
                           }}
                         >
-                          <Box as="span" mr={2}>
-                            🔐
-                          </Box>
-                          Continue with Google
+                          <HStack spacing={3}>
+                            <Image src={GoogleLogo} alt="Google" boxSize="18px" />
+                            <Text>Continue with Google</Text>
+                          </HStack>
                         </Button>
                       </VStack>
                     </form>
@@ -303,25 +305,24 @@ export default function Login({ onLoginSuccess }) {
 
                         <Button
                           width="100%"
+                          height="44px"
                           bg="white"
-                          color="#2d3748"
+                          color="gray.700"
                           border="1px solid"
-                          borderColor="#cbd5e0"
-                          _hover={{ bg: '#f7fafc', borderColor: '#a0aec0' }}
-                          _active={{ bg: '#edf2f7' }}
+                          borderColor="#dadce0"
+                          borderRadius="6px"
                           fontWeight="500"
-                          fontSize="14px"
-                          borderRadius="8px"
-                          h="40px"
+                          _hover={{ bg: '#f7f8f8' }}
+                          _active={{ bg: '#eee' }}
                           onClick={() => {
                             const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://stockflow-erp.onrender.com';
                             window.location.href = `${backendUrl}/api/auth/google`;
                           }}
                         >
-                          <Box as="span" mr={2}>
-                            🔐
-                          </Box>
-                          Continue with Google
+                          <HStack spacing={3}>
+                            <Image src={GoogleLogo} alt="Google" boxSize="18px" />
+                            <Text>Continue with Google</Text>
+                          </HStack>
                         </Button>
                       </VStack>
                     </form>
