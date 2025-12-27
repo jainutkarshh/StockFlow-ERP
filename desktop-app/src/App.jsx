@@ -159,6 +159,32 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Fallback: if token exists in localStorage but user is not set, load it
+    if (!user) {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        console.log('Fallback: Found token in localStorage, attempting to load user');
+        try {
+          const parts = token.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            setUser({
+              id: payload.id,
+              email: payload.email,
+              name: payload.name,
+              provider: payload.provider,
+            });
+            console.log('User loaded from token in localStorage');
+          }
+        } catch (err) {
+          console.error('Failed to load user from token:', err);
+          localStorage.removeItem('auth_token');
+        }
+      }
+    }
+  }, [user]);
+
+  useEffect(() => {
     const handleUnauthorized = () => {
       setUser(null);
     };
@@ -195,9 +221,12 @@ function App() {
   };
 
   const handleLoginSuccess = async (userData, token) => {
+    console.log('handleLoginSuccess called with:', { userData, hasToken: !!token });
+    
     // Store token in localStorage for axios interceptor
     if (token) {
       localStorage.setItem('auth_token', token);
+      console.log('Token saved to localStorage');
     }
 
     // Decode token to get user info if not provided
@@ -212,13 +241,15 @@ function App() {
             name: payload.name,
             provider: payload.provider,
           };
+          console.log('User decoded from token:', userData);
         }
       } catch (err) {
         console.error('Failed to decode token:', err);
       }
     }
 
-    // Update app state
+    // Update app state - THIS MUST HAPPEN
+    console.log('Setting user state to:', userData);
     setUser(userData);
   };
 
