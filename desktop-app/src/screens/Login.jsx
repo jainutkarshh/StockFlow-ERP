@@ -184,6 +184,37 @@ export default function Login({ onLoginSuccess }) {
                         >
                           Login
                         </Button>
+
+                        <Box width="100%" display="flex" alignItems="center" gap={3}>
+                          <Divider borderColor="#e2e8f0" />
+                          <Text fontSize="12px" color="#a0aec0" whiteSpace="nowrap">
+                            OR
+                          </Text>
+                          <Divider borderColor="#e2e8f0" />
+                        </Box>
+
+                        <Button
+                          width="100%"
+                          bg="white"
+                          color="#2d3748"
+                          border="1px solid"
+                          borderColor="#cbd5e0"
+                          _hover={{ bg: '#f7fafc', borderColor: '#a0aec0' }}
+                          _active={{ bg: '#edf2f7' }}
+                          fontWeight="500"
+                          fontSize="14px"
+                          borderRadius="8px"
+                          h="40px"
+                          onClick={() => {
+                            const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://stockflow-erp.onrender.com';
+                            window.location.href = `${backendUrl}/api/auth/google`;
+                          }}
+                        >
+                          <Box as="span" mr={2}>
+                            🔐
+                          </Box>
+                          Continue with Google
+                        </Button>
                       </VStack>
                     </form>
                   </TabPanel>
@@ -260,6 +291,37 @@ export default function Login({ onLoginSuccess }) {
                           h="40px"
                         >
                           Create Account
+                        </Button>
+
+                        <Box width="100%" display="flex" alignItems="center" gap={3}>
+                          <Divider borderColor="#e2e8f0" />
+                          <Text fontSize="12px" color="#a0aec0" whiteSpace="nowrap">
+                            OR
+                          </Text>
+                          <Divider borderColor="#e2e8f0" />
+                        </Box>
+
+                        <Button
+                          width="100%"
+                          bg="white"
+                          color="#2d3748"
+                          border="1px solid"
+                          borderColor="#cbd5e0"
+                          _hover={{ bg: '#f7fafc', borderColor: '#a0aec0' }}
+                          _active={{ bg: '#edf2f7' }}
+                          fontWeight="500"
+                          fontSize="14px"
+                          borderRadius="8px"
+                          h="40px"
+                          onClick={() => {
+                            const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://stockflow-erp.onrender.com';
+                            window.location.href = `${backendUrl}/api/auth/google`;
+                          }}
+                        >
+                          <Box as="span" mr={2}>
+                            🔐
+                          </Box>
+                          Continue with Google
                         </Button>
                       </VStack>
                     </form>

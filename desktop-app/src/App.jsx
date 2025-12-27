@@ -30,9 +30,10 @@ import Payments from './screens/Payments';
 import Ledger from './screens/Ledger';
 import Balances from './screens/Balances';
 import Login from './screens/Login';
+import OAuthSuccess from './screens/OAuthSuccess';
 import { api } from './api/axiosClient';
 
-function AppContent({ user, onLogout }) {
+function AppContent({ user, onLogout, onLoginSuccess }) {
   const [backendStatus, setBackendStatus] = useState('checking');
   const [alert, setAlert] = useState(null);
   const [lowStockAlerts, setLowStockAlerts] = useState([]);
@@ -143,6 +144,7 @@ function AppContent({ user, onLogout }) {
               <Route path="/payments" element={<Payments />} />
               <Route path="/ledger/:partyId?" element={<Ledger />} />
               <Route path="/balances" element={<Balances />} />
+              <Route path="/oauth-success" element={<OAuthSuccess onLoginSuccess={onLoginSuccess} />} />
             </Routes>
           </Box>
         </Flex>
@@ -212,7 +214,7 @@ function App() {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  return <AppContent user={user} onLogout={handleLogout} />;
+  return <AppContent user={user} onLogout={handleLogout} onLoginSuccess={handleLoginSuccess} />;
 }
 
 export default App;
