@@ -12,17 +12,17 @@ export default function OAuthSuccess({ onLoginSuccess }) {
 
     if (!token) {
       setError('No authentication token received. Please try again.');
-      setTimeout(() => navigate('/'), 3000);
+      setTimeout(() => navigate('/login'), 3000);
       return;
     }
 
     try {
-      // Store token securely via Electron API
+      // ✅ Store token using SAME key as rest of app
+      localStorage.setItem('auth_token', token);
+
+      // Also store via Electron API if available
       if (window.electronAPI?.setToken) {
         window.electronAPI.setToken(token);
-      } else {
-        // Fallback for web
-        localStorage.setItem('token', token);
       }
 
       // Decode token to get user info (JWT has 3 parts separated by dots)
@@ -44,14 +44,14 @@ export default function OAuthSuccess({ onLoginSuccess }) {
         onLoginSuccess(user, token);
       }
 
-      // Navigate to dashboard
+      // ✅ Navigate to dashboard with small delay to ensure state updates
       setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
+        navigate('/dashboard', { replace: true });
+      }, 500);
     } catch (err) {
       console.error('OAuth error:', err);
       setError('Failed to process authentication. Please try again.');
-      setTimeout(() => navigate('/'), 3000);
+      setTimeout(() => navigate('/login'), 3000);
     }
   }, [searchParams, navigate, onLoginSuccess]);
 

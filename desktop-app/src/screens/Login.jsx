@@ -320,7 +320,7 @@ export default function Login({ onLoginSuccess }) {
                           }}
                         >
                           <HStack spacing={3}>
-                            <Image src={GoogleLogo} alt="Google" boxSize="18px" />
+                            <Image src="https://developers.google.com/identity/images/g-logo.png" alt="Google" boxSize="18px" />
                             <Text>Continue with Google</Text>
                           </HStack>
                         </Button>
@@ -334,7 +334,7 @@ export default function Login({ onLoginSuccess }) {
             <Divider borderColor="#e2e8f0" />
 
             <Text fontSize="12px" color="#a0aec0" textAlign="center">
-              Your data is secure. Passwords are encrypted and never stored in plaintext.
+              Your data is secure. Passwords are encrypted and never shared.
             </Text>
           </VStack>
         </Box>
