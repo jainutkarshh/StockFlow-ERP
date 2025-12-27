@@ -38,6 +38,9 @@ export default function Login({ onLoginSuccess }) {
       const response = await api.login(loginData);
       const { token, user } = response.data;
 
+      // ✅ Store token in localStorage (same as OAuth)
+      localStorage.setItem('auth_token', token);
+
       // Store token securely via Electron API
       if (window.electronAPI?.setToken) {
         await window.electronAPI.setToken(token);
@@ -66,6 +69,9 @@ export default function Login({ onLoginSuccess }) {
 
       const response = await api.register(registerData);
       const { token, user } = response.data;
+
+      // ✅ Store token in localStorage (same as OAuth)
+      localStorage.setItem('auth_token', token);
 
       // Store token securely via Electron API
       if (window.electronAPI?.setToken) {
