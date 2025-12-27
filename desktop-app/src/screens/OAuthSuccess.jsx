@@ -21,9 +21,19 @@ export default function OAuthSuccess({ onLoginSuccess }) {
       localStorage.setItem('auth_token', token);
       console.log('OAuthSuccess: token saved to localStorage');
 
-      // Update app state
+      // Decode token to get user data
+      const parts = token.split('.');
+      const payload = JSON.parse(atob(parts[1]));
+      const userData = {
+        id: payload.id,
+        email: payload.email,
+        name: payload.name,
+        provider: payload.provider,
+      };
+
+      // Update app state with user data
       if (onLoginSuccess) {
-        onLoginSuccess(null, token);
+        onLoginSuccess(userData, token);
       }
 
       // Navigate to dashboard

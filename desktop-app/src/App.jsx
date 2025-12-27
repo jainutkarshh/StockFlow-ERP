@@ -168,26 +168,57 @@ function App() {
 
   const checkExistingAuth = async () => {
     try {
-      // Check if token exists and is valid
+      let token = null;
+
+      // Check Electron API first
       if (window.electronAPI?.getToken) {
-        const token = await window.electronAPI.getToken();
-        if (token) {
-          const response = await api.getCurrentUser();
-          setUser(response.data.user);
-        }
+        token = await window.electronAPI.getToken();
+      }
+
+      // If no token from Electron, check localStorage (for web/OAuth)
+      if (!token) {
+        token = localStorage.getItem('auth_token');
+      }
+
+      // If token exists, verify it and get user data
+      if (token) {
+        const response = await api.getCurrentUser();
+        setUser(response.data.user);
       }
     } catch (error) {
       console.log('Not authenticated');
+      localStorage.removeItem('auth_token');
+      setUser(null);
     } finally {
       setChecking(false);
     }
   };
 
-  const handleLoginSuccess = (userData, token) => {
+  const handleLoginSuccess = async (userData, token) => {
     // Store token in localStorage for axios interceptor
     if (token) {
       localStorage.setItem('auth_token', token);
     }
+
+    // Decode token to get user info if not provided
+    if (!userData && token) {
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          userData = {
+            id: payload.id,
+            email: payload.email,
+            name: payload.name,
+            provider: payload.provider,
+          };
+        }
+      } catch (err) {
+        console.error('Failed to decode token:', err);
+      }
+    }
+
+    // Update app state
     setUser(userData);
   };
 
