@@ -85,71 +85,68 @@ function AppContent({ user, onLogout, onLoginSuccess }) {
   }
 
   return (
-    <Router>
-      <Flex h="100vh" bg="white" flexDirection="column">
-        {/* Header with user menu */}
-        <Box bg="white" borderBottom="1px solid" borderColor="gray.200" px={6} py={4}>
-          <Flex justify="space-between" align="center">
-            <Box></Box>
-            <Menu>
-              <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
-                {user.name}
-              </MenuButton>
-              <MenuList>
-                <MenuItem fontSize="sm" isDisabled>
-                  {user.email}
-                </MenuItem>
-                <MenuItem onClick={onLogout}>Logout</MenuItem>
-              </MenuList>
-            </Menu>
-          </Flex>
-        </Box>
-
-        <Flex flex={1} overflow="hidden">
-          <Sidebar />
-          <Box flex="1" ml="250px" p={6} overflow="auto" bg="white">
-            {alert && (
-              <Alert status={alert.type} mb={4}>
-                <AlertIcon />
-                {alert.message}
-                <CloseButton
-                  position="absolute"
-                  right="8px"
-                  top="8px"
-                  onClick={() => setAlert(null)}
-                />
-              </Alert>
-            )}
-            
-            {lowStockAlerts.length > 0 && (
-              <Alert status="warning" mb={4}>
-                <AlertIcon />
-                Low stock alert: {lowStockAlerts.length} products need restocking
-                <CloseButton
-                  position="absolute"
-                  right="8px"
-                  top="8px"
-                  onClick={() => setLowStockAlerts([])}
-                />
-              </Alert>
-            )}
-
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/parties" element={<Parties />} />
-              <Route path="/stock-in" element={<StockIn />} />
-              <Route path="/stock-out" element={<StockOut />} />
-              <Route path="/payments" element={<Payments />} />
-              <Route path="/ledger/:partyId?" element={<Ledger />} />
-              <Route path="/balances" element={<Balances />} />
-              <Route path="/oauth-success" element={<OAuthSuccess onLoginSuccess={onLoginSuccess} />} />
-            </Routes>
-          </Box>
+    <Flex h="100vh" bg="white" flexDirection="column">
+      {/* Header with user menu */}
+      <Box bg="white" borderBottom="1px solid" borderColor="gray.200" px={6} py={4}>
+        <Flex justify="space-between" align="center">
+          <Box></Box>
+          <Menu>
+            <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+              {user.name}
+            </MenuButton>
+            <MenuList>
+              <MenuItem fontSize="sm" isDisabled>
+                {user.email}
+              </MenuItem>
+              <MenuItem onClick={onLogout}>Logout</MenuItem>
+            </MenuList>
+          </Menu>
         </Flex>
+      </Box>
+
+      <Flex flex={1} overflow="hidden">
+        <Sidebar />
+        <Box flex="1" ml="250px" p={6} overflow="auto" bg="white">
+          {alert && (
+            <Alert status={alert.type} mb={4}>
+              <AlertIcon />
+              {alert.message}
+              <CloseButton
+                position="absolute"
+                right="8px"
+                top="8px"
+                onClick={() => setAlert(null)}
+              />
+            </Alert>
+          )}
+          
+          {lowStockAlerts.length > 0 && (
+            <Alert status="warning" mb={4}>
+              <AlertIcon />
+              Low stock alert: {lowStockAlerts.length} products need restocking
+              <CloseButton
+                position="absolute"
+                right="8px"
+                top="8px"
+                onClick={() => setLowStockAlerts([])}
+              />
+            </Alert>
+          )}
+
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/parties" element={<Parties />} />
+            <Route path="/stock-in" element={<StockIn />} />
+            <Route path="/stock-out" element={<StockOut />} />
+            <Route path="/payments" element={<Payments />} />
+            <Route path="/ledger/:partyId?" element={<Ledger />} />
+            <Route path="/balances" element={<Balances />} />
+          </Routes>
+        </Box>
       </Flex>
-    </Router>
+    </Flex>
   );
 }
 
@@ -210,11 +207,22 @@ function App() {
     );
   }
 
-  if (!user) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
-  }
+  return (
+    <Router>
+      <Routes>
+        {/* Public routes - NO auth required */}
+        <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+        <Route path="/oauth-success" element={<OAuthSuccess onLoginSuccess={handleLoginSuccess} />} />
 
-  return <AppContent user={user} onLogout={handleLogout} onLoginSuccess={handleLoginSuccess} />;
+        {/* Protected routes - auth required */}
+        {user ? (
+          <Route path="/*" element={<AppContent user={user} onLogout={handleLogout} onLoginSuccess={handleLoginSuccess} />} />
+        ) : (
+          <Route path="/*" element={<Navigate to="/login" replace />} />
+        )}
+      </Routes>
+    </Router>
+  );
 }
 
 export default App;
