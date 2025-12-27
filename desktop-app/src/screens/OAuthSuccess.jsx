@@ -9,6 +9,7 @@ export default function OAuthSuccess({ onLoginSuccess }) {
 
   useEffect(() => {
     const token = searchParams.get('token');
+    console.log('OAuth token received:', !!token);
 
     if (!token) {
       setError('No authentication token received. Please try again.');
@@ -18,7 +19,9 @@ export default function OAuthSuccess({ onLoginSuccess }) {
 
     try {
       // ✅ Store token using SAME key as rest of app
+      console.log('Storing auth_token in localStorage');
       localStorage.setItem('auth_token', token);
+      console.log('Token stored. Checking:', localStorage.getItem('auth_token') ? 'SUCCESS' : 'FAILED');
 
       // Also store via Electron API if available
       if (window.electronAPI?.setToken) {
