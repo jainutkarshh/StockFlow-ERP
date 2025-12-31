@@ -326,25 +326,14 @@ Contributions are welcome! Please follow these steps:
 4. Push to branch (`git push origin feature/YourFeature`)
 5. Open a Pull Request
 
----
-
-## 📝 License
-
-This project is licensed under the MIT License.
-
----
 
 ## 👤 Author
 
 **Utkarsh Jain**  
-Full-Stack Developer | SaaS | Cloud Architecture
+Full-Stack Developer 
 
 ---
 
-## 📧 Support
 
-For issues, questions, or feature requests, please open an issue on GitHub or contact the development team.
 
----
 
-**Built with ❤️ for distribution businesses**
